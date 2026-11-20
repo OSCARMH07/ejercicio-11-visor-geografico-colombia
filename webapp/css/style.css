@@ -1,0 +1,14 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 1rem system-ui, sans-serif; color: #15333a; }
+main { display: grid; grid-template-columns: minmax(15rem, 20rem) 1fr; min-height: 100dvh; }
+aside { padding: 1.25rem; background: #f0f7f5; }
+h1 { font-size: 1.7rem; margin-top: 0; }
+label { display: block; margin-top: 1rem; font-weight: 600; }
+input, select, button { padding: .5rem; font: inherit; }
+input, select { width: 100%; margin-block: .35rem; }
+#results { display: grid; gap: .25rem; }
+#map { min-height: 55vh; }
+.legend { background: white; padding: .5rem .75rem; border-radius: .25rem; }
+.legend span { display: block; }
+.legend i { display: inline-block; width: .8rem; height: .8rem; margin-right: .4rem; vertical-align: middle; }
+@media (max-width: 650px) { main { grid-template-columns: 1fr; } }
