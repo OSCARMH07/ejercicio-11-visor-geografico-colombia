@@ -40,7 +40,10 @@ createServer(async (request, response) => {
       return;
     }
     const [path, contentType] = file;
-    const content = await readFile(new URL(`./webapp/${path}`, import.meta.url));
+    const source = await readFile(new URL(`./webapp/${path}`, import.meta.url), 'utf8');
+    const content = path === 'index.html'
+      ? source.replace('<html lang="es">', '<html lang="es" data-source="geoserver">')
+      : source;
     response.writeHead(200, { 'Content-Type': `${contentType}; charset=utf-8` }).end(content);
   } catch {
     response.writeHead(502).end('No se pudo obtener el recurso.');

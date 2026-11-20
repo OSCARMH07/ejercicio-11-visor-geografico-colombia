@@ -4,12 +4,15 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
+const live = document.documentElement.dataset.source === 'geoserver';
 const control = L.control.layers().addTo(map);
-for (const [type, name] of [['departamentos', 'Departamentos'], ['municipios', 'Municipios']]) {
-  const layer = L.tileLayer.wms('geoserver/wms', {
-    layers: `taller:${type}`, format: 'image/png', transparent: true
-  });
-  control.addOverlay(layer, `${name} (WMS)`);
+if (live) {
+  for (const [type, name] of [['departamentos', 'Departamentos'], ['municipios', 'Municipios']]) {
+    const layer = L.tileLayer.wms('geoserver/wms', {
+      layers: `taller:${type}`, format: 'image/png', transparent: true
+    });
+    control.addOverlay(layer, `${name} (WMS)`);
+  }
 }
 L.control.scale({ imperial: false }).addTo(map);
 
@@ -23,7 +26,7 @@ const colors = { departments: '#155e75', municipalities: '#a64917' };
 const legend = L.control({ position: 'bottomright' });
 legend.onAdd = () => {
   const box = L.DomUtil.create('div', 'legend');
-  box.innerHTML = `<strong>Leyenda WFS</strong>
+  box.innerHTML = `<strong>${live ? 'Leyenda WFS' : 'Leyenda'}</strong>
     <span><i style="background:${colors.departments}"></i>Departamentos</span>
     <span><i style="background:${colors.municipalities}"></i>Municipios</span>`;
   return box;
@@ -63,8 +66,8 @@ function vector(color) {
 
 const departments = vector(colors.departments).addTo(map);
 const municipalities = vector(colors.municipalities);
-control.addOverlay(departments, 'Departamentos (WFS)');
-control.addOverlay(municipalities, 'Municipios (WFS)');
+control.addOverlay(departments, live ? 'Departamentos (WFS)' : 'Departamentos');
+control.addOverlay(municipalities, live ? 'Municipios (WFS)' : 'Municipios');
 
 async function load(type, filter) {
   const params = new URLSearchParams({
@@ -72,8 +75,8 @@ async function load(type, filter) {
     typeNames: `taller:${type}`, outputFormat: 'application/json', srsName: 'EPSG:4326'
   });
   if (filter) params.set('cql_filter', filter);
-  const response = await fetch(`geoserver/wfs?${params}`);
-  if (!response.ok) throw new Error(`GeoServer respondió con HTTP ${response.status}.`);
+  const response = await fetch(live ? `geoserver/wfs?${params}` : `data/${type}.geojson`);
+  if (!response.ok) throw new Error(`La solicitud respondió con HTTP ${response.status}.`);
   const collection = await response.json();
   if (collection.type !== 'FeatureCollection') throw new Error('Se esperaba GeoJSON.');
   return collection;
@@ -83,13 +86,22 @@ const normalize = (name) => name.normalize('NFD').replace(/\p{M}/gu, '').toLower
 let allMunicipalities;
 let filterRequest = 0;
 
+async function selectMunicipalities(code) {
+  if (!code) return allMunicipalities;
+  if (live) return load('municipios', `dpto_ccdgo='${code}'`);
+  return {
+    type: 'FeatureCollection',
+    features: allMunicipalities.features.filter((feature) => feature.properties.dpto_ccdgo === code)
+  };
+}
+
 departmentSelect.addEventListener('change', async () => {
   const request = ++filterRequest;
   const code = departmentSelect.value;
   results.replaceChildren();
   status.textContent = 'Actualizando municipios…';
   try {
-    const data = code ? await load('municipios', `dpto_ccdgo='${code}'`) : allMunicipalities;
+    const data = await selectMunicipalities(code);
     if (request !== filterRequest) return;
     municipalities.clearLayers().addData(data).addTo(map);
     const bounds = municipalities.getBounds();
@@ -114,7 +126,7 @@ form.addEventListener('submit', (event) => {
       return normalize(p.mpio_cnmbr ?? p.dpto_cnmbr).includes(query);
     }).map((layer) => ({ group, layer }))
   );
-  status.textContent = matches.length > 20
+  status.textContent = matches.length === 1 ? '1 resultado.' : matches.length > 20
     ? `${matches.length} resultados. Se muestran los primeros 20.`
     : `${matches.length} resultados.`;
   for (const { group, layer } of matches.slice(0, 20)) {
@@ -145,5 +157,5 @@ Promise.all([load('departamentos'), load('municipios')]).then(([data, municipal]
   form.querySelector('button').disabled = false;
   status.textContent = `${data.features.length} departamentos y ${municipal.features.length.toLocaleString('es-CO')} municipios disponibles.`;
 }).catch((error) => {
-  status.textContent = `No se pudieron cargar las capas WFS. ${error.message}`;
+  status.textContent = `No se pudieron cargar las capas. ${error.message}`;
 });

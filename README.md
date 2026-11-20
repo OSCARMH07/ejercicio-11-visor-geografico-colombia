@@ -6,4 +6,6 @@ El servidor local entrega los archivos de `webapp/` y reenvía las solicitudes d
 
 Para comprobar el visor, alterna las capas WMS con el control de capas, busca Medellín, filtra municipios por Antioquia y haz clic en una entidad. La búsqueda usa los municipios del filtro activo, si hay uno seleccionado. La leyenda identifica las capas vectoriales WFS.
 
-GitHub Pages necesita una fuente de datos accesible para sus visitantes. Si se publica una edición estática con GeoJSON exportado, el filtro de esa edición se aplica en el navegador. La demostración local permite comprobar el WMS, el WFS y el filtro CQL en vivo.
+## Versión para GitHub Pages
+
+Publica la rama `main` desde la raíz del repositorio. El visor queda en la ruta `webapp/` del sitio. Usa archivos GeoJSON exportados desde el WFS del espacio `taller`, con 33 departamentos y 1.121 municipios en EPSG:4326. El filtro se aplica en el navegador. Para demostrar WMS, WFS y CQL en vivo, usa el servidor local.
